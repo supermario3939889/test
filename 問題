@@ -1,0 +1,75 @@
+import requests
+import time
+
+
+timestamp = str(int(time.time()*1000))
+Referer = "***a網址"+timestamp
+LoginPage = "***b網址"+timestamp
+SuccessfulPage = "***c網址"+timestamp
+CaptchaImgURL = "***d網址"+timestamp
+Redirect = "***e網址"
+
+#建立session
+s = requests.Session()
+
+####################A網站####################
+#get Referer來取得cookie
+r = s.get(Referer)
+
+#cookie
+cook = str(s.cookies['JSESSIONID'])
+cook1 = 'JSESSIONID='+str(s.cookies['JSESSIONID'])
+
+#取得驗證碼圖片
+r = s.get(CaptchaImgURL)
+open('ImageVerify.jpg', 'wb').write(r.content)
+
+#輸入驗證碼
+value=input('Enter Code:  ')
+
+#data跟headers
+my_data = {'muid': '***我的帳號', 'mpassword': '***我的密碼',  'authcode': 'value'}
+headers = {
+'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+'Accept-Encoding': 'gzip, deflate, br',
+'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+'Cache-Control': 'max-age=0',
+'Connection': 'keep-alive',
+'Content-Length': '50',
+'Content-Type': 'application/x-www-form-urlencoded',
+'Cookie': cook, ####################問題點1####################
+'Host': '***網站域名',
+'Origin': 'https://***網站域名',
+'Referer': Referer,
+'sec-ch-ua': '"Chromium";v="88", "Google Chrome";v="88", ";Not A Brand";v="99"',
+'sec-ch-ua-mobile': '?0',
+'Sec-Fetch-Dest': 'document',
+'Sec-Fetch-Mode': 'navigate',
+'Sec-Fetch-Site': 'same-origin',
+'Sec-Fetch-User': '?1',
+'Upgrade-Insecure-Requests': '1',
+'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36'
+}
+
+#post帳密進LoginPage，再get登入成功後的SuccessfulPage，取得內容來確認登入成功
+r = s.post(LoginPage, data=my_data, headers=headers)
+r = s.get(SuccessfulPage)
+print(r.text)
+
+####################A網站用來登入B網站的連結####################
+#已將form data直接放在Redirect網址，所以這邊就不重複帶上，只帶headers
+headers1 = {
+'Host': '***網站域名',
+'Connection': 'keep-alive',
+'Upgrade-Insecure-Requests': '1',
+'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36',
+'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+'Accept-Encoding': 'gzip, deflate',
+'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+'Cookie': cook ####################問題點2####################
+}
+
+#get Redirect，用以取得後面post登入B網站要用的sessionID
+r = s.get(Redirect,headers=headers1)
+print(r.text)
+
